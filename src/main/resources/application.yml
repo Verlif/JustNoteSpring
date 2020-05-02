@@ -1,0 +1,19 @@
+spring:
+  datasource:
+    username: root
+    password: ac16508
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/just_note?useUnicode=true&useSSL=false&characterEncoding=UTF-8&serverTimezone=UTC
+    hikari:
+      max-lifetime: 0
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+
+logging:
+  level:
+    note:
+      mapper: debug
+
+server:
+  port: 8888

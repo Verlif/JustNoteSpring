@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="note.mapper.NoteMapper">
+
+    <select id="getSyncList" resultType="note.model.Note" parameterType="int">
+        SELECT note_id AS noteId, note_id_online AS noteIdOL, update_time AS updateTime
+        FROM t_note
+        WHERE owner_id = #{userId}
+    </select>
+
+    <insert id="saveNotes" parameterType="java.util.List">
+        INSERT INTO t_note (note_id, note_id_online, note_title, note_desc, creator_id, owner_id, create_time,
+        update_time)
+        VALUES
+        <foreach collection="notes" item="item" index="index" separator=",">
+            (
+            #{item.noteId}, #{item.noteIdOL}, #{item.noteTitle}, #{item.noteDesc}, #{userId},
+            #{userId}, now(), now()
+            )
+        </foreach>
+    </insert>
+
+    <update id="updateNotes" parameterType="java.util.List">
+        UPDATE t_note
+        <trim prefix="set" suffixOverrides=",">
+            <trim prefix="note_title = case" suffix="end,">
+                <foreach collection="notes" item="item" index="index">
+                    <if test="item.noteTitle !=null and item.noteTitle != ''">
+                        when note_id_online = #{item.noteIdOL}
+                        then #{item.noteTitle}
+                    </if>
+                </foreach>
+            </trim>
+
+            <trim prefix="note_desc = case" suffix="end,">
+                <foreach collection="notes" item="item" index="index">
+                    <if test="item.noteDesc !=null and item.noteDesc != ''">
+                        when note_id_online = #{item.noteIdOL}
+                        then #{item.noteDesc}
+                    </if>
+                </foreach>
+            </trim>
+
+            <trim prefix="creator_id = case" suffix="end,">
+                <foreach collection="notes" item="item" index="index">
+                    <if test="item.creatorId !=null and item.creatorId != -1">
+                        when note_id_online = #{item.noteIdOL}
+                        then #{item.creatorId}
+                    </if>
+                </foreach>
+            </trim>
+
+            <trim prefix="owner_id = case" suffix="end,">
+                <foreach collection="notes" item="item" index="index">
+                    <if test="item.ownerId !=null and item.ownerId != -1">
+                        when note_id_online = #{item.noteIdOL}
+                        then #{item.ownerId}
+                    </if>
+                </foreach>
+            </trim>
+        </trim>
+        , create_time = now(), update_time = now()
+        WHERE owner_id = #{userId} AND note_id_online in
+        <foreach collection="notes" index="index" item="item"
+                 separator="," open="(" close=")">
+            #{item.noteIdOL}
+        </foreach>
+    </update>
+
+    <select id="getSharedNotes" parameterType="int" resultType="note.model.Note">
+        SELECT note_id AS noteId, note_id_online AS noteIdOL, note_title AS noteTitle, note_desc AS noteDesc,
+        creator_id AS creatorId, owner_id AS ownerId, create_time AS createTime,
+        update_time AS updateTime
+        FROM t_note
+        WHERE note_id_online in (SELECT note_id FROM t_share WHERE user_list LIKE '[${userId}]' OR user_list LIKE '[${userId},%' OR user_list LIKE '% ${userId},%' OR user_list LIKE '% ${userId}]')
+    </select>
+
+</mapper>

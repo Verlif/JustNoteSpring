@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="note.mapper.RecordMapper">
+
+    <sql id="noteIdInShare">
+        note_id IN (SELECT note_id FROM t_share WHERE user_list LIKE '[${userId}]' OR user_list LIKE '[${userId},%' OR user_list LIKE '% ${userId},%' OR user_list LIKE '% ${userId}]')
+    </sql>
+
+    <select id="getSyncList" resultType="note.model.Record" parameterType="int">
+        SELECT record_id AS recordId, record_id_online AS recordIdOL, update_time AS updateTime
+        FROM t_record
+        WHERE creator_id = #{userId}
+    </select>
+
+    <select id="getRecordByIdOL" parameterType="int" resultType="note.model.Record">
+        SELECT record_id AS recordId, record_id_online AS recordIdOL, record_title AS recordTitle, record_content AS recordContent, creator_id AS creatorId, note_id AS noteId, update_time AS updateTime
+        FROM t_record
+        WHERE record_id_online = #{recordIdOL} AND <include refid="noteIdInShare"/>
+    </select>
+
+    <select id="getRecordsByNoteIdOL" resultType="note.model.Record" parameterType="int">
+        SELECT record_id AS recordId, record_id_online AS recordIdOL, record_title AS recordTitle, record_content AS recordContent, creator_id AS creatorId, note_id AS noteId, update_time AS updateTime
+        FROM t_record
+        WHERE note_id = (SELECT note_id FROM t_note WHERE note_id_online = #{noteIdOL}) AND (<include refid="noteIdInShare"/> OR owner_id = #{userId})
+    </select>
+
+    <insert id="saveRecords" parameterType="java.util.List">
+        INSERT INTO t_record (record_id, record_id_online, record_title, record_content, creator_id, note_id,
+        create_time,
+        update_time)
+        VALUES
+        <foreach collection="records" item="item" index="index" separator=",">
+            (
+            #{item.recordId}, #{item.recordIdOL}, #{item.recordTitle}, #{item.recordContent}, #{userId},
+            #{item.noteId}, now(), now()
+            )
+        </foreach>
+    </insert>
+
+    <update id="updateRecords" parameterType="java.util.List">
+        UPDATE t_record
+        <trim prefix="set" suffixOverrides=",">
+            <trim prefix="record_title = case" suffix="end,">
+                <foreach collection="records" item="item" index="index">
+                    <if test="item.recordTitle !=null and item.recordTitle != ''">
+                        when record_id_online = #{item.recordIdOL}
+                        then #{item.recordTitle}
+                    </if>
+                </foreach>
+            </trim>
+
+            <trim prefix="record_content = case" suffix="end,">
+                <foreach collection="records" item="item" index="index">
+                    <if test="item.recordContent != null and item.recordContent != ''">
+                        when record_id_online = #{item.recordIdOL}
+                        then #{item.recordContent}
+                    </if>
+                </foreach>
+            </trim>
+
+            <trim prefix="creator_id = case" suffix="end,">
+                <foreach collection="records" item="item" index="index">
+                    <if test="item.creatorId != null and item.creatorId != -1">
+                        when record_id_online = #{item.recordIdOL}
+                        then #{item.creatorId}
+                    </if>
+                </foreach>
+            </trim>
+
+            <trim prefix="note_id = case" suffix="end,">
+                <foreach collection="records" item="item" index="index">
+                    <if test="item.noteId != null and item.noteId != -1">
+                        when record_id_online = #{item.recordIdOL}
+                        then #{item.noteId}
+                    </if>
+                </foreach>
+            </trim>
+        </trim>
+        , update_time = now()
+        WHERE note_id = (SELECT note_id FROM t_note WHERE owner_id = #{userId}) AND record_id_online in
+        <foreach collection="records" index="index" item="item"
+                 separator="," open="(" close=")">
+            #{item.recordIdOL}
+        </foreach>
+    </update>
+</mapper>
