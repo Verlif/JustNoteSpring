@@ -6,9 +6,13 @@ import note.model.result.FailResult;
 import note.model.result.Result;
 import note.model.result.SusResult;
 import note.service.NoteService;
+import note.utils.ConsoleUtil;
 import note.utils.JSONGet;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestAttribute;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -21,7 +25,7 @@ public class NoteController {
     @PostMapping("note/get/id")
     public Result getNoteById(@RequestBody String body) {
         int id = JSONGet.getValue(body, Integer.class);
-        Note note = noteService.getNoteById(id);
+        Note note = noteService.getNoteByIdOL(id);
         if (note != null) {
             return new SusResult(note);
         } else return new FailResult("未查询到相关笔记本-" + id);
@@ -38,7 +42,9 @@ public class NoteController {
     public Result getSharedNotes(
             @RequestAttribute(name = RequestFilter.USER_ID) int userId
     ) {
-        return new SusResult("notes", noteService.getSharedNotes(userId));
+        if (userId != 0) {
+            return new SusResult("notes", noteService.getSharedNotes(userId));
+        } else return new FailResult("未知用户的请求！！");
     }
 
     @PostMapping("note/save")
@@ -71,18 +77,30 @@ public class NoteController {
         } else return new FailResult("上传数据不完整");
     }
 
-    @PostMapping("note/delete")
-    public Result deleteNote(
+    @PostMapping("note/delete/idOL")
+    public Result deleteNoteByIdOL(
             @RequestBody String body,
             @RequestAttribute(name = RequestFilter.USER_ID) int userId
     ) {
         int noteId = JSONGet.getValue(body, Integer.class);
-        Note note = noteService.getNoteById(noteId);
+        Note note = noteService.getNoteByIdOL(noteId);
         if (note != null) {
             if (note.getOwnerId() == userId) {
-                noteService.deleteNoteById(noteId);
+                noteService.deleteNoteByIdOL(noteId);
                 return new SusResult();
             } else return new FailResult("无法删除其他拥有者的笔记本");
         } else return new FailResult("无效的noteId-" + noteId);
     }
+
+    @PostMapping("note/delete/id")
+    public Result deleteNoteById(
+            @RequestBody String body,
+            @RequestAttribute(name = RequestFilter.USER_ID) int userId
+    ) {
+        int noteId = JSONGet.getValue(body, Integer.class);
+        if (noteService.deleteNoteById(noteId, userId)) {
+            return new SusResult();
+        } else return new FailResult("无法删除其他拥有者的笔记本");
+    }
+
 }

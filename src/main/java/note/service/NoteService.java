@@ -1,6 +1,7 @@
 package note.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import note.mapper.NoteMapper;
 import note.model.Note;
 import note.utils.ConsoleUtil;
@@ -17,8 +18,15 @@ public class NoteService {
     @Autowired
     private NoteMapper noteMapper;
 
-    public Note getNoteById(int noteIdOL) {
+    public Note getNoteByIdOL(int noteIdOL) {
         return noteMapper.selectById(noteIdOL);
+    }
+
+    public Note getNoteById(int noteId, int userId) {
+        QueryWrapper<Note> wrapper = new QueryWrapper<>();
+        wrapper.eq("note_id", noteId);
+        wrapper.eq("owner_id", userId);
+        return noteMapper.selectOne(wrapper);
     }
 
     /**
@@ -70,7 +78,14 @@ public class NoteService {
         } else return false;
     }
 
-    public void deleteNoteById(int noteId) {
-        noteMapper.deleteById(noteId);
+    public void deleteNoteByIdOL(int noteIdOL) {
+        noteMapper.deleteById(noteIdOL);
+    }
+
+    public boolean deleteNoteById(int noteId, int userId) {
+        UpdateWrapper<Note> wrapper = new UpdateWrapper<>();
+        wrapper.eq("note_id", noteId);
+        wrapper.eq("owner_id", userId);
+        return noteMapper.delete(wrapper) == 1;
     }
 }

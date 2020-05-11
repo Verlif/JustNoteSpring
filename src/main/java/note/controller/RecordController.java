@@ -9,7 +9,10 @@ import note.service.RecordService;
 import note.service.ShareService;
 import note.utils.JSONGet;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestAttribute;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -50,7 +53,7 @@ public class RecordController {
     ) {
         Record record = JSONGet.getValue(body, Record.class);
         record.setCreatorId(userId);
-        if (recordService.saveOrModifyRecord(record)) {
+        if (recordService.saveOrModifyRecord(record, userId)) {
             return new SusResult(record);
         } else return new FailResult("无法保存记录");
     }
@@ -62,16 +65,14 @@ public class RecordController {
     ) {
         Record record = JSONGet.getValue(body, Record.class);
         if (record != null) {
-            if (record.getCreatorId() == userId) {
-                if (recordService.saveOrModifyRecord(record)) {
-                    return new SusResult(record);
-                } else return new FailResult("无法更新记录");
-            } else return new FailResult("无法更新其他用户创建的记录");
+            if (recordService.saveOrModifyRecord(record, userId)) {
+                return new SusResult(record);
+            } else return new FailResult("无法更新记录");
         } else return new FailResult("上传记录出错");
     }
 
-    @PostMapping("record/delete")
-    public Result deleteRecord(
+    @PostMapping("record/delete/idOL")
+    public Result deleteRecordByIdOL(
             @RequestBody String body,
             @RequestAttribute(RequestFilter.USER_ID) int userId
     ) {
@@ -79,10 +80,20 @@ public class RecordController {
         Record record = recordService.getRecordById(recordId);
         if (record != null) {
             if (record.getCreatorId() == userId) {
-                recordService.deleteRecordById(recordId);
+                recordService.deleteRecordByIdOL(recordId);
                 return new SusResult(record);
             } else return new FailResult("无法删除其他创建者的记录");
         } else return new FailResult("没有该记录-" + recordId);
     }
 
+    @PostMapping("record/delete/id")
+    public Result deleteRecordById(
+            @RequestBody String body,
+            @RequestAttribute(RequestFilter.USER_ID) int userId
+    ) {
+        int recordId = JSONGet.getValue(body, Integer.class);
+        if (recordService.deleteRecordById(recordId, userId)) {
+            return new SusResult();
+        } else return new FailResult("无法删除其他创建者的记录");
+    }
 }

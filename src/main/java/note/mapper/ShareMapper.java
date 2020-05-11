@@ -10,7 +10,13 @@ import java.util.List;
 @Mapper
 public interface ShareMapper extends BaseMapper<Share> {
 
-    List<Share> getRecordShares(@Param("recordId") int recordId, @Param("userId") int userId);
-    List<Share> getNoteShares(@Param("noteId") int noteId, @Param("userId") int userId);
+    /**
+     * 获取record的共享列表
+     * @param recordIdOL  record的在线id
+     * @param userId    record的创建者id
+     * @return  共享列表
+     */
+    List<Share> getRecordShares(@Param("recordId") int recordIdOL, @Param("userId") int userId);
+    List<Share> getNoteShares(@Param("noteId") int noteIdOL, @Param("userId") int userId);
     int deleteShare(@Param("shareId") int shareId, @Param("userId") int userId);
 }

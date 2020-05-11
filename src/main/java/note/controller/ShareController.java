@@ -8,7 +8,6 @@ import note.model.result.Result;
 import note.model.result.SusResult;
 import note.service.NoteService;
 import note.service.ShareService;
-import note.utils.ConsoleUtil;
 import note.utils.JSONGet;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestAttribute;
@@ -16,7 +15,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -34,7 +32,7 @@ public class ShareController {
     ) {
         Share share = JSONGet.getValue(body, Share.class);
         // 权限判定，通过共享的笔记本所属判定
-        Note note = noteService.getNoteById(share.getNoteId());
+        Note note = noteService.getNoteByIdOL(share.getNoteId());
         if (note == null || note.getOwnerId() != userId) {
             return new FailResult("权限不足");
         }
@@ -50,7 +48,7 @@ public class ShareController {
     ) {
         Share share = JSONGet.getValue(body, Share.class);
         // 权限判定，通过共享的笔记本所属判定
-        Note note = noteService.getNoteById(share.getNoteId());
+        Note note = noteService.getNoteByIdOL(share.getNoteId());
         if (note == null || note.getOwnerId() != userId) {
             return new FailResult("权限不足");
         }

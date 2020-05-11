@@ -15,13 +15,13 @@
     <select id="getRecordByIdOL" parameterType="int" resultType="note.model.Record">
         SELECT record_id AS recordId, record_id_online AS recordIdOL, record_title AS recordTitle, record_content AS recordContent, creator_id AS creatorId, note_id AS noteId, update_time AS updateTime
         FROM t_record
-        WHERE record_id_online = #{recordIdOL} AND <include refid="noteIdInShare"/>
+        WHERE record_id_online = #{recordIdOL} OR <include refid="noteIdInShare"/>
     </select>
 
     <select id="getRecordsByNoteIdOL" resultType="note.model.Record" parameterType="int">
-        SELECT record_id AS recordId, record_id_online AS recordIdOL, record_title AS recordTitle, record_content AS recordContent, creator_id AS creatorId, note_id AS noteId, update_time AS updateTime
+        SELECT DISTINCT record_id AS recordId, record_id_online AS recordIdOL, record_title AS recordTitle, record_content AS recordContent, creator_id AS creatorId, note_id AS noteId, update_time AS updateTime
         FROM t_record
-        WHERE note_id = (SELECT note_id FROM t_note WHERE note_id_online = #{noteIdOL}) AND (<include refid="noteIdInShare"/> OR owner_id = #{userId})
+        WHERE note_id = (SELECT note_id FROM t_note WHERE note_id_online = #{noteIdOL} AND (owner_id = #{userId} OR note_id_online IN (SELECT note_id FROM t_share WHERE user_list LIKE '[${userId}]' OR user_list LIKE '[${userId},%' OR user_list LIKE '% ${userId},%' OR user_list LIKE '% ${userId}]')))
     </select>
 
     <insert id="saveRecords" parameterType="java.util.List">
@@ -36,6 +36,13 @@
             )
         </foreach>
     </insert>
+
+    <update id="updateRecord" parameterType="note.model.Record">
+        UPDATE t_record
+        SET record_title = #{param.recordTitle}, record_content = #{param.recordContent}, note_id = #{param.noteId}, update_time = now()
+        WHERE (record_id_online = #{param.recordIdOL} AND creator_id = #{param.creatorId})
+            OR note_id IN (SELECT note_id FROM t_share WHERE (user_list LIKE '[${userId}]' OR user_list LIKE '[${userId},%' OR user_list LIKE '% ${userId},%' OR user_list LIKE '% ${userId}]') AND share_type = 1002)
+    </update>
 
     <update id="updateRecords" parameterType="java.util.List">
         UPDATE t_record

@@ -20,5 +20,6 @@ public interface RecordMapper extends BaseMapper<Record> {
      */
     List<Record> getRecordsByNoteIdOL(@Param("noteIdOL") int noteIdOL, @Param("userId") int userId);
     int saveRecords(@Param("records") List<Record> records, @Param("userId") int userId);
+    int updateRecord(@Param("param") Record record, @Param("userId") int userId);
     int updateRecords(@Param("records") List<Record> records, @Param("userId") int userId);
 }
