@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="note.mapper.UtilMapper">
+
+    <select id="checkTableExist" resultType="int" parameterType="String">
+        <!--        SHOW TABLES LIKE #{tableName}-->
+        SELECT COUNT(*) from information_schema.TABLES WHERE table_name = #{tableName}
+    </select>
+
+    <update id="createTNote">
+        CREATE TABLE IF NOT EXISTS `t_note` (
+        `note_id` int(11) NOT NULL COMMENT '笔记本本地id',
+        `note_id_online` int(255) NOT NULL AUTO_INCREMENT COMMENT '笔记本在线id',
+        `note_title` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '笔记本标题',
+        `note_desc` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '笔记本描述',
+        `creator_id` int(11) NULL DEFAULT NULL COMMENT '创建者id',
+        `owner_id` int(11) NULL DEFAULT NULL COMMENT '拥有者id',
+        `create_time` timestamp(0) NULL DEFAULT NULL COMMENT '笔记本创建时间',
+        `update_time` timestamp(0) NULL DEFAULT NULL COMMENT '笔记本更新时间，主要用于同步',
+        PRIMARY KEY (`note_id_online`) USING BTREE,
+        INDEX `creator_id`(`creator_id`) USING BTREE,
+        INDEX `owner_id`(`owner_id`) USING BTREE,
+        INDEX `note_id`(`note_id`) USING BTREE
+        ) ENGINE = InnoDB AUTO_INCREMENT = 29 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+    </update>
+
+    <update id="createTRecord">
+        CREATE TABLE IF NOT EXISTS `t_record`  (
+        `record_id` int(11) NOT NULL COMMENT '记录本地id',
+        `record_id_online` int(11) NOT NULL AUTO_INCREMENT COMMENT '记录在线id',
+        `record_title` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '记录标题',
+        `record_content` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '记录内容',
+        `note_id` int(11) NULL DEFAULT NULL COMMENT '所属笔记本id',
+        `creator_id` int(11) NULL DEFAULT NULL COMMENT '创建者id',
+        `create_time` timestamp(0) NULL DEFAULT NULL COMMENT '创建时间',
+        `update_time` timestamp(0) NULL DEFAULT NULL COMMENT '更新时间，主要用于同步',
+        PRIMARY KEY (`record_id_online`) USING BTREE,
+        INDEX `creator_id`(`creator_id`) USING BTREE,
+        INDEX `t_record_ibfk_1`(`note_id`) USING BTREE
+        ) ENGINE = InnoDB AUTO_INCREMENT = 16 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+    </update>
+
+    <update id="createTUser">
+        CREATE TABLE IF NOT EXISTS `t_user`  (
+        `user_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '用户id',
+        `user_name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '用户名',
+        `user_key` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '用户key',
+        `user_desc` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '用户描述',
+        `user_email` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '用户邮箱',
+        `create_time` timestamp(0) NULL DEFAULT NULL COMMENT '创建时间',
+        PRIMARY KEY (`user_id`) USING BTREE
+        ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+    </update>
+
+    <update id="createTShare">
+        CREATE TABLE IF NOT EXISTS `t_share`  (
+        `share_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '共享id',
+        `note_id` int(11) NULL DEFAULT NULL COMMENT '相关笔记本id',
+        `share_type` int(11) NULL DEFAULT NULL COMMENT '共享方式',
+        `user_list` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '用户id列表',
+        `create_time` timestamp(0) NULL DEFAULT NULL COMMENT '共享创建时间',
+        PRIMARY KEY (`share_id`) USING BTREE,
+        INDEX `t_share_ibfk_1`(`note_id`) USING BTREE
+        ) ENGINE = InnoDB AUTO_INCREMENT = 8 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+    </update>
+
+    <update id="createTType">
+        CREATE TABLE IF NOT EXISTS `t_type`  (
+        `id` int(11) NOT NULL AUTO_INCREMENT,
+        `type` int(11) NULL DEFAULT NULL,
+        `desc` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+        PRIMARY KEY (`id`) USING BTREE
+        ) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+    </update>
+
+    <select id="addForeignKey">
+        ALTER TABLE t_note ADD CONSTRAINT `t_note_ibfk_1` FOREIGN KEY (`creator_id`) REFERENCES `t_user` (`user_id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
+        ALTER TABLE t_note ADD CONSTRAINT `t_note_ibfk_2` FOREIGN KEY (`owner_id`) REFERENCES `t_user` (`user_id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
+        ALTER TABLE t_record ADD CONSTRAINT `t_record_ibfk_1` FOREIGN KEY (`note_id`) REFERENCES `t_note` (`note_id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
+        ALTER TABLE t_record ADD CONSTRAINT `t_record_ibfk_2` FOREIGN KEY (`creator_id`) REFERENCES `t_user` (`user_id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
+        ALTER TABLE t_share ADD CONSTRAINT `t_share_ibfk_1` FOREIGN KEY (`note_id`) REFERENCES `t_note` (`note_id_online`) ON DELETE RESTRICT ON UPDATE RESTRICT;
+    </select>
+</mapper>
